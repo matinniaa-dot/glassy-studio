@@ -1,9 +1,3 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#061427">
 <title>Glassy Studio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -116,6 +110,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr) 
 .tcard:active{transform:scale(.97)}
 .tcard canvas{width:100%;aspect-ratio:9/16;border-radius:10px;display:block;background:#0a1d34;object-fit:cover}
 .tcard span{font-size:12px;font-weight:700;line-height:1.35;color:var(--ice)}
+.tcard-sel{border-color:var(--blue2)!important;box-shadow:0 0 0 2px rgba(88,168,255,.45),0 0 26px var(--glow)!important;transform:translateY(-2px)}
 .agrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .abtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:16px;border:1px solid var(--line);background:var(--glass);font-size:12px;font-weight:700;color:var(--ice);transition:transform .25s var(--ease),box-shadow .25s,border-color .25s}
 .abtn:hover{border-color:rgba(140,198,255,.6);box-shadow:0 0 22px var(--glow);transform:translateY(-2px)}
@@ -130,6 +125,13 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr) 
 .lyr .ib.act{color:var(--blue2)}
 .muted{color:var(--mute);font-size:12px;line-height:1.7}
 .sep{height:1px;background:var(--line);border:0;margin:0}
+.sep-line{height:1px;background:var(--line);margin:10px 0}
+#tplForm .f{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+#tplForm .f span{font-size:12px;color:var(--mute);font-weight:600}
+#fr-prices .prow{display:flex;align-items:center;gap:6px}
+#fr-prices .prow span{flex:1;font-size:13px;color:var(--ice)}
+#fr-prices .prow input{width:110px;font-size:13px;direction:ltr;text-align:left}
+#fr-prices .psep{font-size:11px;color:var(--mute);padding:4px 0 2px;font-weight:700;border-top:1px solid var(--line);margin-top:4px}
 
 /* ---------- properties ---------- */
 .f{display:grid;gap:5px}
@@ -207,8 +209,49 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr) 
       </div>
 
       <section class="pane" id="p-tpl">
-        <p class="muted">یک قالب را انتخاب کنید و همهٔ لایه‌هایش را با موس جابه‌جا، بزرگ و ویرایش کنید.</p>
+        <p class="muted">یک قالب را انتخاب کنید، داده را وارد کنید و بسازید.</p>
         <div class="tgrid" id="tgrid"></div>
+
+        <!-- data form — نمایش پس از انتخاب قالب -->
+        <div id="tplForm" hidden>
+          <div class="sep-line"></div>
+          <div id="tplFormTitle" style="font-weight:800;font-size:14px;margin-bottom:6px;color:var(--blue2)"></div>
+
+          <!-- فرم ساعت کار -->
+          <div id="form-hours" hidden>
+            <div class="f"><span>نوع روز</span>
+              <select id="fh-off">
+                <option value="0">روز عادی (شنبه تا چهارشنبه)</option>
+                <option value="1">تعطیل (پنجشنبه، جمعه، تعطیلات)</option>
+              </select>
+            </div>
+            <div class="f"><span>تاریخ فردا (پیش‌فرض: خودکار)</span>
+              <input type="text" id="fh-date" placeholder="مثلاً: یکشنبه ۲۵ آبان ۱۴۰۵">
+            </div>
+            <div class="f"><span>ساعت شروع پیست</span>
+              <input type="text" id="fh-piste" placeholder="۷" style="direction:ltr">
+            </div>
+            <div class="f"><span>ساعت شروع بلیط‌فروشی</span>
+              <input type="text" id="fh-cable" placeholder="۶" style="direction:ltr">
+            </div>
+          </div>
+
+          <!-- فرم نرخ اجاره -->
+          <div id="form-rental" hidden>
+            <div class="f"><span>مدرسه</span>
+              <select id="fr-school">
+                <option value="1">مدرسه اسکی شمارهٔ ۱</option>
+                <option value="2">مدرسه اسکی VIP (شمارهٔ ۲)</option>
+              </select>
+            </div>
+            <div id="fr-prices" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto"></div>
+          </div>
+
+          <button class="btn pri" id="tplBuild" style="width:100%;margin-top:10px">
+            <svg class="i" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            بساز
+          </button>
+        </div>
       </section>
 
       <section class="pane" id="p-add" hidden>
@@ -274,7 +317,7 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelect
 const PI=Math.PI, clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const uid=()=>Math.random().toString(36).slice(2,9);
 const C={red:'#D93337',navy:'#102A43',snow:'#F5F9FC',ice:'#DCEAF4',amber:'#FFC247',dred:'#B4232B',white:'#FFFFFF',black:'#050b14'};
-const PAL=[C.red,C.dred,C.navy,C.snow,C.ice,C.amber,C.white,C.black,'#58a8ff','#1b6fd1'];
+const PAL=[C.red,C.dred,C.navy,C.snow,C.ice,C.amber,C.white,C.black];
 const faD=s=>String(s).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const money=n=>faD(String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'٬'));
 const HAS_FILTER='filter' in CanvasRenderingContext2D.prototype;
@@ -639,10 +682,28 @@ function head(d,{chip,chipW,title,sub,tAnim}){
 }
 function watermark(d,y=1620){addL(d,'text',{name:'واترمارک',text:'@Tochalcomplex',dir:'ltr',align:'center',x:240,y,w:600,size:36,weight:600,opacity:.8,anim:{t:'fade',delay:.8,dur:.8}})}
 
+/* ---- تاریخ شمسی فردا به وقت تهران ---- */
+function tomorrowFa(){
+  /* فردا = امروز + ۱ روز، به وقت تهران */
+  const tz='Asia/Tehran';
+  const now=new Date();
+  /* تاریخ فردا را در تایم‌زون تهران می‌سازیم */
+  const tmr=new Date(now.getTime()+24*3600*1000);
+  /* روز هفته: getDay() روی ظهر UTC برای جلوگیری از خطای مرز شب */
+  const noon=new Date(tmr);
+  noon.setUTCHours(9,0,0,0); /* ۹ UTC = ۱۲:۳۰ یا ۱۳:۳۰ تهران */
+  const wd=noon.toLocaleString('fa-IR',{weekday:'long',timeZone:tz});
+  /* تاریخ شمسی */
+  const dateStr=tmr.toLocaleString('fa-IR-u-nu-latn',{
+    year:'numeric',month:'long',day:'numeric',timeZone:tz
+  });
+  return wd+' '+dateStr; /* مثلاً: شنبه ۲۵ آبان ۱۴۰۵ */
+}
+
 function tplHours(off){
   const d=newDoc(1080,1920,'ice');
   addL(d,'image',{name:'لوگو',mediaId:'logo',fit:'contain',x:904,y:150,w:104,h:96,anim:{t:'fade',delay:0,dur:.6}});
-  addL(d,'rect',{name:'نشان تاریخ',fill:C.red,radius:999,x:432,y:270,w:576,h:84,glow:40,glowColor:'rgba(217,51,55,.75)',label:'فردا، [روز و تاریخ]',labelSize:38,anim:{t:'pop',delay:.15,dur:.7}});
+  addL(d,'rect',{name:'نشان تاریخ',fill:C.red,radius:999,x:432,y:270,w:576,h:84,glow:40,glowColor:'rgba(217,51,55,.75)',label:'فردا، '+tomorrowFa(),labelSize:38,anim:{t:'pop',delay:.15,dur:.7}});
   addL(d,'text',{name:'تیتر',text:'ساعت شروع فعالیت\nپیست اسکی',x:72,y:380,w:936,size:76,weight:800,anim:{t:'up',delay:.3,dur:.7}});
   const card=(top,cap,hr,dl)=>{
     addL(d,'glass',{name:cap,x:60,y:top,w:960,h:330,anim:{t:'up',delay:dl,dur:.7}});
@@ -712,6 +773,96 @@ const TPLS=[
   {n:'عکس یا ویدیو با واترمارک',f:tplMedia},
   {n:'بوم خالی',f:tplBlank},
 ];
+/* ---- template data-form logic ---- */
+let _selTplIdx=-1;
+const TPL_FORMS={
+  0:'hours', 1:'hours',   // ساعت کار (عادی / تعطیل)
+  2:'rental', 3:'rental', // نرخ اجاره
+};
+
+function showTplForm(idx){
+  _selTplIdx=idx;
+  const form=$('#tplForm');
+  const type=TPL_FORMS[idx];
+  form.hidden=!type;
+  if(!type)return;
+  $('#tplFormTitle').textContent=TPLS[idx].n;
+  $('#form-hours').hidden=type!=='hours';
+  $('#form-rental').hidden=type!=='rental';
+  if(type==='hours'){
+    // پیش‌فرض: نوع روز از نام قالب
+    $('#fh-off').value=idx===0?'1':'0';
+    $('#fh-date').value='';
+    const off=idx===0;
+    $('#fh-piste').value=off?'۶':'۷';
+    $('#fh-cable').value=off?'۵':'۶';
+  }
+  if(type==='rental'){
+    $('#fr-school').value=idx===2?'1':'2';
+    buildRentalPriceForm(idx===2?RENT1:RENT2);
+    $('#fr-school').onchange=()=>buildRentalPriceForm($('#fr-school').value==='1'?RENT1:RENT2);
+  }
+}
+
+function buildRentalPriceForm(R){
+  const c=$('#fr-prices'); c.innerHTML='';
+  R.g.forEach((grp,gi)=>{
+    if(gi>0){const sep=document.createElement('div');sep.className='psep';sep.textContent='─────';c.appendChild(sep)}
+    grp.forEach(([nm,sub,price])=>{
+      const row=document.createElement('div');row.className='prow';
+      const lbl=document.createElement('span');lbl.textContent=nm;lbl.title=sub||'';
+      const inp=document.createElement('input');inp.type='number';inp.min=0;inp.step=1000;
+      inp.value=price;inp.dataset.nm=nm;inp.dataset.gi=gi;
+      row.appendChild(lbl);row.appendChild(inp);c.appendChild(row);
+    });
+  });
+}
+
+function buildFromForm(){
+  if(_selTplIdx<0)return;
+  const type=TPL_FORMS[_selTplIdx];
+  if(type==='hours'){
+    const off=$('#fh-off').value==='1';
+    const dateOverride=$('#fh-date').value.trim();
+    const pisteHr=$('#fh-piste').value.trim()||( off?'۶':'۷');
+    const cableHr=$('#fh-cable').value.trim()||( off?'۵':'۶');
+    // ساخت doc با پارامترهای سفارشی
+    const d=newDoc(1080,1920,'ice');
+    addL(d,'image',{name:'لوگو',mediaId:'logo',fit:'contain',x:904,y:150,w:104,h:96,anim:{t:'fade',delay:0,dur:.6}});
+    const dateLabel='فردا، '+(dateOverride||tomorrowFa());
+    addL(d,'rect',{name:'نشان تاریخ',fill:C.red,radius:999,x:432,y:270,w:576,h:84,glow:40,glowColor:'rgba(217,51,55,.75)',label:dateLabel,labelSize:38,anim:{t:'pop',delay:.15,dur:.7}});
+    addL(d,'text',{name:'تیتر',text:'ساعت شروع فعالیت\nپیست اسکی',x:72,y:380,w:936,size:76,weight:800,anim:{t:'up',delay:.3,dur:.7}});
+    const card=(top,cap,hr,dl)=>{
+      addL(d,'glass',{name:cap,x:60,y:top,w:960,h:330,anim:{t:'up',delay:dl,dur:.7}});
+      addL(d,'text',{name:'عنوان کارت',text:cap,x:108,y:top+34,w:864,size:38,weight:800,anim:{t:'up',delay:dl+.1,dur:.7}});
+      addL(d,'text',{name:'روزها',text:off?'پنجشنبه، جمعه و روزهای تعطیل':'شنبه تا چهارشنبه',x:108,y:top+104,w:864,size:38,weight:600,color:C.ice,anim:{t:'right',delay:dl+.2,dur:.7}});
+      addL(d,'text',{name:'ساعت',text:'ساعت',x:772,y:top+206,w:200,size:50,weight:600,align:'right',anim:{t:'pop',delay:dl+.3,dur:.6}});
+      addL(d,'text',{name:'عدد ساعت',text:hr,x:602,y:top+170,w:170,size:130,weight:800,align:'center',lh:1,anim:{t:'pop',delay:dl+.35,dur:.7}});
+      addL(d,'text',{name:'صبح',text:'صبح',x:440,y:top+206,w:162,size:50,weight:600,align:'right',anim:{t:'pop',delay:dl+.4,dur:.6}});
+    };
+    card(640,'شروع فعالیت پیست اسکی',pisteHr,.5);
+    card(1010,'شروع بلیط‌فروشی تله‌کابین',cableHr,.9);
+    addL(d,'rect',{name:'نوار خرید',fill:C.snow,fillA:.9,radius:44,x:60,y:1390,w:960,h:150,anim:{t:'up',delay:1.3,dur:.7}});
+    addL(d,'text',{name:'متن خرید',text:'خرید اینترنتی بلیط',x:108,y:1420,w:864,size:44,weight:800,color:C.navy,anim:{t:'up',delay:1.4,dur:.7}});
+    addL(d,'text',{name:'لینک خرید',text:'shop.tochal.org',dir:'ltr',align:'right',x:108,y:1480,w:864,size:38,weight:600,color:C.navy,anim:{t:'up',delay:1.5,dur:.7}});
+    watermark(d,1590);
+    S=d;
+  } else if(type==='rental'){
+    const base=$('#fr-school').value==='1'?RENT1:RENT2;
+    // اعمال قیمت‌های ویرایش‌شده
+    const inputs=[...$('#fr-prices').querySelectorAll('input[data-nm]')];
+    // deep-clone داده
+    const R=JSON.parse(JSON.stringify(base));
+    inputs.forEach(inp=>{
+      const nm=inp.dataset.nm, val=parseFloat(inp.value)||0;
+      R.g.forEach(grp=>grp.forEach(r=>{if(r[0]===nm)r[2]=val}));
+    });
+    S=tplRental(R);
+  }
+  selId=null;viewT=Infinity;playing=false;hist=[];hi=-1;afterDocChange();commit();
+  toast('قالب ساخته شد! هر لایه را با موس ویرایش کنید.');
+}
+
 function buildTemplates(){
   const g=$('#tgrid'); g.innerHTML='';
   TPLS.forEach((t,i)=>{
@@ -720,9 +871,23 @@ function buildTemplates(){
     try{const d=t.f(),off=document.createElement('canvas');off.width=d.w;off.height=d.h;render(off.getContext('2d'),d,Infinity);
       const k=c.getContext('2d');k.drawImage(off,0,0,c.width,c.height)}catch(err){console.error(err)}
     b.appendChild(c);const s=document.createElement('span');s.textContent=t.n;b.appendChild(s);
-    b.onclick=()=>{S=t.f();selId=null;viewT=Infinity;playing=false;hist=[];hi=-1;afterDocChange();commit();toast('قالب باز شد. هر لایه را با موس بگیرید و جابه‌جا کنید.')};
+    b.onclick=()=>{
+      // هایلایت
+      g.querySelectorAll('.tcard').forEach(x=>x.classList.remove('tcard-sel'));
+      b.classList.add('tcard-sel');
+      if(TPL_FORMS[i]!==undefined){
+        // قالب‌های دارای فرم: فقط فرم نشان بده، نساز
+        showTplForm(i);
+      } else {
+        // قالب‌های بدون فرم: مثل قبل بساز
+        $('#tplForm').hidden=true;
+        S=t.f();selId=null;viewT=Infinity;playing=false;hist=[];hi=-1;afterDocChange();commit();
+        toast('قالب باز شد. هر لایه را با موس بگیرید و جابه‌جا کنید.');
+      }
+    };
     g.appendChild(b);
   });
+  $('#tplBuild').onclick=buildFromForm;
 }
 
 /* ================================================================== add elements */
@@ -886,6 +1051,7 @@ function syncMusicUI(){const m=S.music.mediaId&&media[S.music.mediaId];$('#music
 /* ================================================================== size / duration / timeline */
 $('#sizeSel').onchange=e=>{const [w,h]=e.target.value.split('x').map(Number);S.w=w;S.h=h;applyCanvasSize();commit()};
 $('#dur').oninput=e=>{S.duration=clamp(parseFloat(e.target.value)||8,1,60);setScrubMax();scheduleCommit()};
+$('#dur').onchange=e=>{S.duration=clamp(parseFloat(e.target.value)||8,1,60);setScrubMax();scheduleCommit()};
 function setScrubMax(){const s=$('#scrub');s.max=Math.round(S.duration*100);s.value=viewT===Infinity?s.max:Math.round(viewT*100);updTm()}
 function updTm(){$('#tm').textContent=viewT===Infinity?'پایانی':viewT.toFixed(1)+' / '+S.duration+'s'}
 $('#scrub').oninput=e=>{stopPlay();const v=+e.target.value;viewT=v>=+e.target.max?Infinity:v/100;syncVideos(viewT);updTm();draw()};
@@ -959,7 +1125,7 @@ async function exportVideo(){
   const mime=types.find(t=>MediaRecorder.isTypeSupported(t)); if(!mime){toast('قالب ویدیو در این مرورگر پشتیبانی نمی‌شود.');return}
   const ext=mime.startsWith('video/mp4')?'mp4':'webm';
   const off=document.createElement('canvas');off.width=S.w;off.height=S.h;const oc=off.getContext('2d');
-  const D=S.duration, stream=off.captureStream(30);
+  const stream=off.captureStream(30);
   // audio: music + video sounds through WebAudio
   let ac=null,gains=[],audioEls=[];
   try{
@@ -970,6 +1136,7 @@ async function exportVideo(){
     S.layers.forEach(L=>{if(L.type==='video'&&!L.hidden&&media[L.mediaId]){media[L.mediaId].el.muted=false;addEl(media[L.mediaId].el,1,0)}});
     if(gains.length){dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t))}
   }catch(err){console.warn('audio unavailable',err)}
+  const D=S.duration||8;
   const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9e6}); const chunks=[]; rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
   recording=true;cancelRec=false;
   modal(`<h2>در حال ضبط ویدیو</h2><div class="bar"><i id="pb"></i></div><p class="muted" id="pt">آماده‌سازی…</p><button class="btn red" id="rc" type="button">لغو</button>`);
@@ -979,12 +1146,14 @@ async function exportVideo(){
   audioEls.forEach(([el,st])=>{try{el.currentTime=st;el.play().catch(()=>{})}catch(_){}});
   videoEls().forEach(v=>{try{v.play().catch(()=>{})}catch(_){}});
   if(gains.length&&ac){const now=ac.currentTime;gains.forEach(g=>{const v=g.gain.value;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(v,now+.3);g.gain.setValueAtTime(v,now+Math.max(.4,D-1));g.gain.linearRampToValueAtTime(0,now+D)})}
-  rec.start(250);
+  rec.start(100);
   const t0=performance.now();
   await new Promise(done=>{const tick=now=>{const t=(now-t0)/1000;
     if(cancelRec||t>=D){done();return}
     render(oc,S,t);$('#pb').style.width=(t/D*100)+'%';$('#pt').textContent=`${t.toFixed(1)} از ${D} ثانیه`;requestAnimationFrame(tick)};requestAnimationFrame(tick)});
-  render(oc,S,D); await new Promise(r=>setTimeout(r,120));
+  render(oc,S,D); await new Promise(r=>setTimeout(r,300));
+  rec.requestData();
+  await new Promise(r=>setTimeout(r,150));
   const stopped=new Promise(r=>rec.onstop=r); rec.stop(); await stopped;
   audioEls.forEach(([el])=>el.pause()); videoEls().forEach(v=>v.pause()); try{ac&&ac.close()}catch(_){}
   recording=false; closeModal(); draw();
@@ -1012,5 +1181,3 @@ const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAAF/CAYAAAAGtb3ZAA
 boot();
 })();
 </script>
-
-</html>
