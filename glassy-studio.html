@@ -776,45 +776,59 @@ function tplMedia(){
 function tplBlank(){const d=newDoc(1080,1920,'alborz');watermark(d,1620);return d}
 
 /* ---- ساعات کاری ---- */
+function rowHeight(r){
+  // ارتفاع هر row بر اساس تعداد ایستگاه‌ها
+  if(r.stations&&r.stations.length) return 56+Math.max(r.stations.length,1)*46+16;
+  return 120;
+}
 function tplServiceHours(tabs){
-  // tabs: [{label, weekdays, weekend}]  weekdays/weekend: {open,close} یا null=تعطیل
-  const d=newDoc(1080,1920,'ice'); d.duration=10;
+  const validTabs=tabs.filter(t=>t.weekdays||t.weekend);
+  // محاسبه کل ارتفاع برای duration
+  const totalCards=validTabs.reduce((s,t)=>{
+    const rows=[];
+    if(t.weekdays)rows.push(t.weekdays);
+    if(t.weekend)rows.push(t.weekend);
+    return s+rows.reduce((rs,r)=>rs+rowHeight(r),0)+56+16;
+  },0);
+  const dur=Math.max(8,Math.min(20,Math.round(validTabs.length*2.5)));
+  const d=newDoc(1080,1920,'ice'); d.duration=dur;
   addL(d,'image',{name:'لوگو',mediaId:'logo',fit:'contain',x:904,y:120,w:104,h:96,anim:{t:'fade',delay:0,dur:.6}});
   addL(d,'rect',{name:'نشان',fill:C.red,radius:999,x:60,y:260,w:460,h:76,glow:36,glowColor:'rgba(217,51,55,.7)',label:'ساعات کاری',labelSize:34,anim:{t:'pop',delay:.15,dur:.7}});
   addL(d,'text',{name:'تیتر',text:'ساعات کاری\nخدمات توچال',x:72,y:370,w:936,size:72,weight:800,anim:{t:'up',delay:.3,dur:.7}});
   // تب‌نوار
-  const tw=960/tabs.length, ty=560;
+  const tw=Math.floor(960/validTabs.length), ty=560;
   addL(d,'glass',{name:'نوار تب',x:60,y:ty,w:960,h:88,radius:44,blur:22,tint:.16,anim:{t:'up',delay:.4,dur:.7}});
   addL(d,'rect',{name:'تب فعال',fill:C.snow,fillA:.95,radius:38,x:66,y:ty+6,w:tw-12,h:76,glow:36,glowColor:'rgba(160,210,255,.9)',anim:{t:'left',delay:.8,dur:.8}});
-  tabs.forEach((t,i)=>addL(d,'text',{name:'تب '+t.label,text:t.label,align:'center',x:60+i*tw,y:ty+22,w:tw,size:34,weight:800,color:i===0?C.navy:C.snow,anim:{t:'fade',delay:.7+i*.1,dur:.6}}));
+  validTabs.forEach((t,i)=>addL(d,'text',{name:'تب '+t.label,text:t.label,align:'center',x:60+i*tw,y:ty+22,w:tw,size:Math.min(34,Math.floor(900/validTabs.length/t.label.length*10)),weight:800,color:i===0?C.navy:C.snow,anim:{t:'fade',delay:.7+i*.1,dur:.6}}));
   // کارت‌های ساعت
   let cy=680;
-  tabs.forEach((t,i)=>{
+  validTabs.forEach((t,i)=>{
     const rows=[];
     if(t.weekdays)rows.push({days:'شنبه تا چهارشنبه',...t.weekdays});
     if(t.weekend) rows.push({days:'پنجشنبه و جمعه',...t.weekend});
-    if(!rows.length)return;
-    const cardH=rows.length*140+56;
+    // ارتفاع دقیق کارت
+    const cardH=rows.reduce((s,r)=>s+rowHeight(r),0)+56;
     addL(d,'glass',{name:'کارت '+t.label,x:60,y:cy,w:960,h:cardH,anim:{t:'up',delay:.5+i*.12,dur:.7}});
-    addL(d,'text',{name:'نام '+t.label,text:t.label,x:108,y:cy+24,w:864,size:36,weight:800,color:C.blue2||C.ice,anim:{t:'up',delay:.6+i*.12,dur:.6}});
+    addL(d,'text',{name:'نام '+t.label,text:t.label,x:108,y:cy+16,w:864,size:36,weight:800,color:C.ice,anim:{t:'up',delay:.6+i*.12,dur:.6}});
+    let ry=cy+62;
     rows.forEach((r,ri)=>{
-      const ry=cy+80+ri*140, dl=.7+i*.12+ri*.08;
-      addL(d,'text',{name:r.days,text:r.days,x:108,y:ry,w:580,size:34,weight:600,color:C.ice,anim:{t:'right',delay:dl,dur:.6}});
+      const dl=.7+i*.12+ri*.08, rh=rowHeight(r);
+      addL(d,'text',{name:r.days,text:r.days,x:108,y:ry,w:580,size:32,weight:600,color:C.ice,opacity:.8,anim:{t:'right',delay:dl,dur:.6}});
       if(r.stations&&r.stations.length){
-        // ایستگاه‌های جداگانه: «شروع ۷:۰۰» + هر ایستگاه روی یک خط
-        addL(d,'text',{name:'شروع '+r.days,text:'شروع '+r.open,dir:'ltr',align:'left',x:108,y:ry+48,w:280,size:34,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
+        addL(d,'text',{name:'شروع '+r.days,text:'شروع '+r.open,dir:'ltr',align:'left',x:108,y:ry+38,w:260,size:32,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
         r.stations.forEach((st,si)=>{
-          addL(d,'text',{name:st.name,text:st.name+' تا '+st.close,dir:'rtl',x:380,y:ry+48+si*44,w:490,size:30,weight:600,color:C.ice,anim:{t:'fade',delay:dl+.1+si*.05,dur:.6}});
+          addL(d,'text',{name:st.name,text:st.name+':  '+st.close,dir:'rtl',x:360,y:ry+38+si*46,w:510,size:28,weight:600,color:C.ice,anim:{t:'fade',delay:dl+.1+si*.05,dur:.6}});
         });
       } else {
         const timeStr=r.close?r.open+' — '+r.close:r.open;
-        addL(d,'text',{name:'ساعت '+r.days,text:timeStr,dir:'ltr',align:'left',x:108,y:ry+52,w:400,size:44,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
+        addL(d,'text',{name:'ساعت '+r.days,text:timeStr,dir:'ltr',align:'left',x:108,y:ry+38,w:400,size:40,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
       }
-      if(ri<rows.length-1)addL(d,'rect',{name:'خط',fill:C.ice,fillA:.18,radius:1,x:108,y:ry+118,w:844,h:1,anim:{t:'fade',delay:.8,dur:.5}});
+      ry+=rh;
+      if(ri<rows.length-1)addL(d,'rect',{name:'خط',fill:C.ice,fillA:.18,radius:1,x:108,y:ry-8,w:844,h:1,anim:{t:'fade',delay:.8,dur:.5}});
     });
-    cy+=cardH+16;
+    cy+=cardH+14;
   });
-  watermark(d,Math.min(cy+20,1820));
+  watermark(d,Math.min(cy+20,1860));
   return d;
 }
 
