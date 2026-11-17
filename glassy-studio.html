@@ -798,10 +798,18 @@ function tplServiceHours(tabs){
     addL(d,'glass',{name:'کارت '+t.label,x:60,y:cy,w:960,h:cardH,anim:{t:'up',delay:.5+i*.12,dur:.7}});
     addL(d,'text',{name:'نام '+t.label,text:t.label,x:108,y:cy+24,w:864,size:36,weight:800,color:C.blue2||C.ice,anim:{t:'up',delay:.6+i*.12,dur:.6}});
     rows.forEach((r,ri)=>{
-      const ry=cy+80+ri*140;
-      addL(d,'text',{name:r.days,text:r.days,x:108,y:ry,w:580,size:34,weight:600,color:C.ice,anim:{t:'right',delay:.7+i*.12+ri*.08,dur:.6}});
-      const timeStr=r.close?r.open+' — '+r.close:r.open;
-      addL(d,'text',{name:'ساعت '+r.days,text:timeStr,dir:'ltr',align:'left',x:108,y:ry+52,w:400,size:44,weight:800,color:C.amber,anim:{t:'left',delay:.75+i*.12+ri*.08,dur:.6}});
+      const ry=cy+80+ri*140, dl=.7+i*.12+ri*.08;
+      addL(d,'text',{name:r.days,text:r.days,x:108,y:ry,w:580,size:34,weight:600,color:C.ice,anim:{t:'right',delay:dl,dur:.6}});
+      if(r.stations&&r.stations.length){
+        // ایستگاه‌های جداگانه: «شروع ۷:۰۰» + هر ایستگاه روی یک خط
+        addL(d,'text',{name:'شروع '+r.days,text:'شروع '+r.open,dir:'ltr',align:'left',x:108,y:ry+48,w:280,size:34,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
+        r.stations.forEach((st,si)=>{
+          addL(d,'text',{name:st.name,text:st.name+' تا '+st.close,dir:'rtl',x:380,y:ry+48+si*44,w:490,size:30,weight:600,color:C.ice,anim:{t:'fade',delay:dl+.1+si*.05,dur:.6}});
+        });
+      } else {
+        const timeStr=r.close?r.open+' — '+r.close:r.open;
+        addL(d,'text',{name:'ساعت '+r.days,text:timeStr,dir:'ltr',align:'left',x:108,y:ry+52,w:400,size:44,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
+      }
       if(ri<rows.length-1)addL(d,'rect',{name:'خط',fill:C.ice,fillA:.18,radius:1,x:108,y:ry+118,w:844,h:1,anim:{t:'fade',delay:.8,dur:.5}});
     });
     cy+=cardH+16;
@@ -835,10 +843,12 @@ function tplServicePrices(tabs){
 }
 
 const DEFAULT_HOURS_TABS=[
-  {label:'سورتمه',   weekdays:{open:'۱۵:۰۰',close:'۲۳:۰۰'}, weekend:{open:'۰۹:۰۰',close:'۲۴:۰۰'}},
-  {label:'تله‌کابین', weekdays:{open:'۰۸:۰۰',close:'۲۲:۰۰'}, weekend:{open:'۰۷:۰۰',close:'۲۳:۰۰'}},
-  {label:'آکادمی تنیس',weekdays:{open:'۱۵:۰۰',close:'۲۳:۰۰'}, weekend:{open:'۱۱:۰۰',close:'۲۴:۰۰'}},
-  {label:'پارکینگ',  weekdays:{open:'۰۷:۰۰',close:'۲۳:۰۰'}, weekend:{open:'۰۶:۰۰',close:'۲۴:۰۰'}},
+  {label:'سورتمه',    weekdays:{open:'۱۲:۰۰',close:'۲۱:۰۰'}, weekend:{open:'۰۹:۰۰',close:'۲۳:۰۰'}},
+  {label:'تله‌کابین', weekdays:{open:'۷:۰۰', stations:[{name:'ایستگاه ۲ و ۵',close:'۱۴:۰۰'},{name:'ایستگاه ۷',close:'۱۳:۰۰'}]},
+                      weekend:{open:'۶:۰۰',  stations:[{name:'همه ایستگاه‌ها',close:'تا تکمیل ظرفیت'}]}},
+  {label:'تله سیژ',   weekdays:{open:'۱۲:۰۰',close:'بلیط فروشی ۲۰:۰۰'}, weekend:{open:'۰۷:۰۰',close:'بلیط فروشی ۲۲:۰۰'}},
+  {label:'اسکای فلایر',weekdays:null, weekend:{open:'۱۱:۰۰',close:'۲۳:۰۰'}},
+  {label:'واقعیت مجازی',weekdays:{open:'۱۲:۰۰',close:'۲۱:۰۰'}, weekend:{open:'۱۱:۰۰',close:'۲۳:۰۰'}},
 ];
 const DEFAULT_PRICES_TABS=[
   {label:'سورتمه',    items:[{name:'بزرگسال',price:500000},{name:'کودک (زیر ۱۲ سال)',price:350000}]},
@@ -895,19 +905,54 @@ function showTplForm(idx){
   if(type==='svc-prices') buildSvcPricesForm();
 }
 
-const SVC_LABELS=['سورتمه','تله‌کابین','آکادمی تنیس','پارکینگ'];
+const SVC_LABELS=DEFAULT_PRICES_TABS.map(t=>t.label);
+
+const SVC_LABELS_FULL=DEFAULT_HOURS_TABS.map(t=>t.label);
+
+function stationRowsHtml(stations){
+  return (stations||[]).map((st,si)=>
+    `<div class="prow st-row" style="gap:4px;align-items:center">
+      <input type="text" class="st-name" placeholder="نام ایستگاه" value="${st.name||''}" style="flex:1;font-size:12px">
+      <input type="text" class="st-close" placeholder="پایان" value="${st.close||''}" style="width:120px;font-size:12px;direction:ltr">
+      <button type="button" class="btn sm ib" onclick="this.closest('.st-row').remove()" title="حذف" style="min-height:28px;width:28px;padding:0">−</button>
+    </div>`
+  ).join('');
+}
 
 function buildSvcHoursForm(){
   const c=$('#fsh-tabs'); c.innerHTML='';
-  SVC_LABELS.forEach((lbl,i)=>{
-    const def=DEFAULT_HOURS_TABS[i];
+  DEFAULT_HOURS_TABS.forEach((def,i)=>{
+    const hasStWd=def.weekdays?.stations, hasStWe=def.weekend?.stations;
     const wrap=document.createElement('div');
-    wrap.innerHTML=`<div style="font-weight:800;font-size:13px;color:var(--blue2);margin-bottom:6px">${lbl}</div>
-      <div class="f"><span>روزهای عادی — شروع</span><input type="text" data-svc="${i}" data-day="wd" data-f="open" value="${def.weekdays?.open||''}" placeholder="۱۵:۰۰"></div>
-      <div class="f"><span>روزهای عادی — پایان</span><input type="text" data-svc="${i}" data-day="wd" data-f="close" value="${def.weekdays?.close||''}" placeholder="۲۳:۰۰"></div>
-      <div class="f"><span>تعطیل — شروع</span><input type="text" data-svc="${i}" data-day="we" data-f="open" value="${def.weekend?.open||''}" placeholder="۰۹:۰۰"></div>
-      <div class="f"><span>تعطیل — پایان</span><input type="text" data-svc="${i}" data-day="we" data-f="close" value="${def.weekend?.close||''}" placeholder="۲۴:۰۰"></div>`;
-    if(i<SVC_LABELS.length-1){const sep=document.createElement('hr');sep.className='sep';wrap.appendChild(sep)}
+    let html=`<div style="font-weight:800;font-size:13px;color:var(--blue2);margin-bottom:6px">${def.label}</div>`;
+    if(def.weekdays!==null){
+      html+=`<div class="f"><span>روزهای عادی — شروع</span><input type="text" data-svc="${i}" data-day="wd" data-f="open" value="${def.weekdays?.open||''}" placeholder="۰۸:۰۰"></div>`;
+      if(hasStWd){
+        html+=`<div class="f"><span>ایستگاه‌های روزهای عادی</span>
+          <div class="st-list" id="stWd${i}">${stationRowsHtml(def.weekdays.stations)}</div>
+          <button type="button" class="btn sm" onclick="document.getElementById('stWd${i}').insertAdjacentHTML('beforeend',\`${stationRowsHtml([{name:'',close:''}]).replace(/`/g,'\\`')}\`)">+ ایستگاه</button>
+        </div>`;
+      } else {
+        html+=`<div class="f"><span>روزهای عادی — پایان</span><input type="text" data-svc="${i}" data-day="wd" data-f="close" value="${def.weekdays?.close||''}" placeholder="۲۳:۰۰"></div>`;
+      }
+    } else {
+      html+=`<div style="font-size:12px;color:var(--mute);margin-bottom:6px">روزهای عادی: تعطیل</div>`;
+    }
+    if(def.weekend!==null){
+      html+=`<div class="f"><span>تعطیل — شروع</span><input type="text" data-svc="${i}" data-day="we" data-f="open" value="${def.weekend?.open||''}" placeholder="۰۹:۰۰"></div>`;
+      if(hasStWe){
+        html+=`<div class="f"><span>ایستگاه‌های تعطیل</span>
+          <div class="st-list" id="stWe${i}">${stationRowsHtml(def.weekend.stations)}</div>
+          <button type="button" class="btn sm" onclick="document.getElementById('stWe${i}').insertAdjacentHTML('beforeend',\`${stationRowsHtml([{name:'',close:''}]).replace(/`/g,'\\`')}\`)">+ ایستگاه</button>
+        </div>`;
+      } else {
+        html+=`<div class="f"><span>تعطیل — پایان</span><input type="text" data-svc="${i}" data-day="we" data-f="close" value="${def.weekend?.close||''}" placeholder="۲۴:۰۰"></div>`;
+      }
+    } else {
+      html+=`<div style="font-size:12px;color:var(--mute);margin-bottom:6px">تعطیل: تعطیل</div>`;
+    }
+    wrap.innerHTML=html;
+    if(i<DEFAULT_HOURS_TABS.length-1){const sep=document.createElement('hr');sep.className='sep';wrap.appendChild(sep)}
     c.appendChild(wrap);
   });
 }
@@ -980,17 +1025,25 @@ function buildFromForm(){
     });
     S=tplRental(R);
   } else if(type==='svc-hours'){
-    const tabs=SVC_LABELS.map((lbl,i)=>{
-      const get=(day,f)=>{
+    const tabs=DEFAULT_HOURS_TABS.map((def,i)=>{
+      const getInp=(day,f)=>{
         const inp=$('#fsh-tabs').querySelector(`input[data-svc="${i}"][data-day="${day}"][data-f="${f}"]`);
         return inp?inp.value.trim():'';
       };
-      const wdOpen=get('wd','open'), wdClose=get('wd','close');
-      const weOpen=get('we','open'), weClose=get('we','close');
+      const getStations=(listId)=>{
+        const el=document.getElementById(listId);
+        if(!el)return null;
+        const rows=[...el.querySelectorAll('.st-row')];
+        if(!rows.length)return null;
+        return rows.map(r=>({name:r.querySelector('.st-name').value.trim(),close:r.querySelector('.st-close').value.trim()})).filter(s=>s.name||s.close);
+      };
+      const wdOpen=getInp('wd','open'), weOpen=getInp('we','open');
+      const wdSt=getStations(`stWd${i}`), weSt=getStations(`stWe${i}`);
+      const wdClose=getInp('wd','close'), weClose=getInp('we','close');
       return {
-        label:lbl,
-        weekdays:wdOpen?{open:wdOpen,close:wdClose}:null,
-        weekend:weOpen?{open:weOpen,close:weClose}:null,
+        label:def.label,
+        weekdays:wdOpen?{open:wdOpen, ...(wdSt?{stations:wdSt}:{close:wdClose})}:null,
+        weekend: weOpen?{open:weOpen, ...(weSt?{stations:weSt}:{close:weClose})}:null,
       };
     });
     S=tplServiceHours(tabs);
