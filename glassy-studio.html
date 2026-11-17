@@ -247,6 +247,16 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr) 
             <div id="fr-prices" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto"></div>
           </div>
 
+          <!-- فرم ساعات کاری خدمات -->
+          <div id="form-svc-hours" hidden>
+            <div id="fsh-tabs" style="display:flex;flex-direction:column;gap:14px"></div>
+          </div>
+
+          <!-- فرم بهای خدمات -->
+          <div id="form-svc-prices" hidden>
+            <div id="fsp-tabs" style="display:flex;flex-direction:column;gap:14px"></div>
+          </div>
+
           <button class="btn pri" id="tplBuild" style="width:100%;margin-top:10px">
             <svg class="i" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             بساز
@@ -764,11 +774,86 @@ function tplMedia(){
   return d;
 }
 function tplBlank(){const d=newDoc(1080,1920,'alborz');watermark(d,1620);return d}
+
+/* ---- ساعات کاری ---- */
+function tplServiceHours(tabs){
+  // tabs: [{label, weekdays, weekend}]  weekdays/weekend: {open,close} یا null=تعطیل
+  const d=newDoc(1080,1920,'ice'); d.duration=10;
+  addL(d,'image',{name:'لوگو',mediaId:'logo',fit:'contain',x:904,y:120,w:104,h:96,anim:{t:'fade',delay:0,dur:.6}});
+  addL(d,'rect',{name:'نشان',fill:C.red,radius:999,x:60,y:260,w:460,h:76,glow:36,glowColor:'rgba(217,51,55,.7)',label:'ساعات کاری',labelSize:34,anim:{t:'pop',delay:.15,dur:.7}});
+  addL(d,'text',{name:'تیتر',text:'ساعات کاری\nخدمات توچال',x:72,y:370,w:936,size:72,weight:800,anim:{t:'up',delay:.3,dur:.7}});
+  // تب‌نوار
+  const tw=960/tabs.length, ty=560;
+  addL(d,'glass',{name:'نوار تب',x:60,y:ty,w:960,h:88,radius:44,blur:22,tint:.16,anim:{t:'up',delay:.4,dur:.7}});
+  addL(d,'rect',{name:'تب فعال',fill:C.snow,fillA:.95,radius:38,x:66,y:ty+6,w:tw-12,h:76,glow:36,glowColor:'rgba(160,210,255,.9)',anim:{t:'left',delay:.8,dur:.8}});
+  tabs.forEach((t,i)=>addL(d,'text',{name:'تب '+t.label,text:t.label,align:'center',x:60+i*tw,y:ty+22,w:tw,size:34,weight:800,color:i===0?C.navy:C.snow,anim:{t:'fade',delay:.7+i*.1,dur:.6}}));
+  // کارت‌های ساعت
+  let cy=680;
+  tabs.forEach((t,i)=>{
+    const rows=[];
+    if(t.weekdays)rows.push({days:'شنبه تا چهارشنبه',...t.weekdays});
+    if(t.weekend) rows.push({days:'پنجشنبه و جمعه',...t.weekend});
+    if(!rows.length)return;
+    const cardH=rows.length*140+56;
+    addL(d,'glass',{name:'کارت '+t.label,x:60,y:cy,w:960,h:cardH,anim:{t:'up',delay:.5+i*.12,dur:.7}});
+    addL(d,'text',{name:'نام '+t.label,text:t.label,x:108,y:cy+24,w:864,size:36,weight:800,color:C.blue2||C.ice,anim:{t:'up',delay:.6+i*.12,dur:.6}});
+    rows.forEach((r,ri)=>{
+      const ry=cy+80+ri*140;
+      addL(d,'text',{name:r.days,text:r.days,x:108,y:ry,w:580,size:34,weight:600,color:C.ice,anim:{t:'right',delay:.7+i*.12+ri*.08,dur:.6}});
+      const timeStr=r.close?r.open+' — '+r.close:r.open;
+      addL(d,'text',{name:'ساعت '+r.days,text:timeStr,dir:'ltr',align:'left',x:108,y:ry+52,w:400,size:44,weight:800,color:C.amber,anim:{t:'left',delay:.75+i*.12+ri*.08,dur:.6}});
+      if(ri<rows.length-1)addL(d,'rect',{name:'خط',fill:C.ice,fillA:.18,radius:1,x:108,y:ry+118,w:844,h:1,anim:{t:'fade',delay:.8,dur:.5}});
+    });
+    cy+=cardH+16;
+  });
+  watermark(d,Math.min(cy+20,1820));
+  return d;
+}
+
+/* ---- بهای خدمات ---- */
+function tplServicePrices(tabs){
+  // tabs: [{label, items:[{name,price,note?}]}]
+  const d=newDoc(1080,1920,'alborz'); d.duration=10;
+  head(d,{chip:'بهای خدمات',chipW:300,title:'بهای خدمات\nمجموعه توچال',sub:'قیمت‌ها به تومان'});
+  let cy=560;
+  tabs.forEach((t,i)=>{
+    if(!t.items||!t.items.length)return;
+    const rh=86, cardH=t.items.length*rh+72;
+    addL(d,'glass',{name:'کارت '+t.label,x:60,y:cy,w:960,h:cardH,anim:{t:'up',delay:.5+i*.1,dur:.7}});
+    addL(d,'rect',{name:'نوار '+t.label,fill:C.red,fillA:.85,radius:10,x:60,y:cy,w:960,h:52,anim:{t:'fade',delay:.4+i*.1,dur:.6}});
+    addL(d,'text',{name:'عنوان '+t.label,text:t.label,x:108,y:cy+8,w:800,size:32,weight:800,anim:{t:'up',delay:.45+i*.1,dur:.6}});
+    t.items.forEach((item,ri)=>{
+      const ry=cy+56+ri*rh, dl=.7+i*.1+ri*.07;
+      addL(d,'text',{name:item.name,text:item.name+(item.note?' ('+item.note+')':''),x:108+200,y:ry+18,w:652,size:34,weight:600,anim:{t:'right',delay:dl,dur:.6}});
+      addL(d,'text',{name:'قیمت '+item.name,text:money(item.price),align:'left',x:108+36,y:ry+10,w:200,size:40,weight:800,color:C.amber,anim:{t:'left',delay:dl,dur:.6}});
+      if(ri<t.items.length-1)addL(d,'rect',{name:'خط',fill:C.ice,fillA:.15,radius:1,x:108,y:ry+rh-2,w:844,h:1,anim:{t:'fade',delay:dl,dur:.4}});
+    });
+    cy+=cardH+14;
+  });
+  watermark(d,Math.min(cy+20,1820));
+  return d;
+}
+
+const DEFAULT_HOURS_TABS=[
+  {label:'سورتمه',   weekdays:{open:'۱۵:۰۰',close:'۲۳:۰۰'}, weekend:{open:'۰۹:۰۰',close:'۲۴:۰۰'}},
+  {label:'تله‌کابین', weekdays:{open:'۰۸:۰۰',close:'۲۲:۰۰'}, weekend:{open:'۰۷:۰۰',close:'۲۳:۰۰'}},
+  {label:'آکادمی تنیس',weekdays:{open:'۱۵:۰۰',close:'۲۳:۰۰'}, weekend:{open:'۱۱:۰۰',close:'۲۴:۰۰'}},
+  {label:'پارکینگ',  weekdays:{open:'۰۷:۰۰',close:'۲۳:۰۰'}, weekend:{open:'۰۶:۰۰',close:'۲۴:۰۰'}},
+];
+const DEFAULT_PRICES_TABS=[
+  {label:'سورتمه',    items:[{name:'بزرگسال',price:500000},{name:'کودک (زیر ۱۲ سال)',price:350000}]},
+  {label:'تله‌کابین', items:[{name:'رفت و برگشت',price:800000},{name:'یک‌طرفه',price:500000}]},
+  {label:'آکادمی تنیس',items:[{name:'یک ساعت زمین',price:600000},{name:'دو ساعت زمین',price:1000000}]},
+  {label:'پارکینگ',   items:[{name:'روزانه',price:150000},{name:'ساعتی',price:50000}]},
+];
+
 const TPLS=[
   {n:'ساعت کار فردا، پنجشنبه و جمعه و تعطیل (۶ و ۵ صبح)',f:()=>tplHours(true)},
   {n:'ساعت کار فردا، شنبه تا چهارشنبه (۷ و ۶ صبح)',f:()=>tplHours(false)},
   {n:'نرخ اجاره، مدرسه اسکی ۱',f:()=>tplRental(RENT1)},
   {n:'نرخ اجاره، مدرسه ۲ (VIP)',f:()=>tplRental(RENT2)},
+  {n:'ساعات کاری خدمات (سورتمه / تله‌کابین / تنیس / پارکینگ)',f:()=>tplServiceHours(DEFAULT_HOURS_TABS)},
+  {n:'بهای خدمات (سورتمه / تله‌کابین / تنیس / پارکینگ)',f:()=>tplServicePrices(DEFAULT_PRICES_TABS)},
   {n:'تب‌های شیشه‌ای گلسی',f:tplTabs},
   {n:'عکس یا ویدیو با واترمارک',f:tplMedia},
   {n:'بوم خالی',f:tplBlank},
@@ -776,8 +861,10 @@ const TPLS=[
 /* ---- template data-form logic ---- */
 let _selTplIdx=-1;
 const TPL_FORMS={
-  0:'hours', 1:'hours',   // ساعت کار (عادی / تعطیل)
-  2:'rental', 3:'rental', // نرخ اجاره
+  0:'hours',  1:'hours',   // ساعت کار پیست
+  2:'rental', 3:'rental',  // نرخ اجاره
+  4:'svc-hours',           // ساعات کاری خدمات
+  5:'svc-prices',          // بهای خدمات
 };
 
 function showTplForm(idx){
@@ -789,6 +876,8 @@ function showTplForm(idx){
   $('#tplFormTitle').textContent=TPLS[idx].n;
   $('#form-hours').hidden=type!=='hours';
   $('#form-rental').hidden=type!=='rental';
+  $('#form-svc-hours').hidden=type!=='svc-hours';
+  $('#form-svc-prices').hidden=type!=='svc-prices';
   if(type==='hours'){
     // پیش‌فرض: نوع روز از نام قالب
     $('#fh-off').value=idx===0?'1':'0';
@@ -802,6 +891,40 @@ function showTplForm(idx){
     buildRentalPriceForm(idx===2?RENT1:RENT2);
     $('#fr-school').onchange=()=>buildRentalPriceForm($('#fr-school').value==='1'?RENT1:RENT2);
   }
+  if(type==='svc-hours') buildSvcHoursForm();
+  if(type==='svc-prices') buildSvcPricesForm();
+}
+
+const SVC_LABELS=['سورتمه','تله‌کابین','آکادمی تنیس','پارکینگ'];
+
+function buildSvcHoursForm(){
+  const c=$('#fsh-tabs'); c.innerHTML='';
+  SVC_LABELS.forEach((lbl,i)=>{
+    const def=DEFAULT_HOURS_TABS[i];
+    const wrap=document.createElement('div');
+    wrap.innerHTML=`<div style="font-weight:800;font-size:13px;color:var(--blue2);margin-bottom:6px">${lbl}</div>
+      <div class="f"><span>روزهای عادی — شروع</span><input type="text" data-svc="${i}" data-day="wd" data-f="open" value="${def.weekdays?.open||''}" placeholder="۱۵:۰۰"></div>
+      <div class="f"><span>روزهای عادی — پایان</span><input type="text" data-svc="${i}" data-day="wd" data-f="close" value="${def.weekdays?.close||''}" placeholder="۲۳:۰۰"></div>
+      <div class="f"><span>تعطیل — شروع</span><input type="text" data-svc="${i}" data-day="we" data-f="open" value="${def.weekend?.open||''}" placeholder="۰۹:۰۰"></div>
+      <div class="f"><span>تعطیل — پایان</span><input type="text" data-svc="${i}" data-day="we" data-f="close" value="${def.weekend?.close||''}" placeholder="۲۴:۰۰"></div>`;
+    if(i<SVC_LABELS.length-1){const sep=document.createElement('hr');sep.className='sep';wrap.appendChild(sep)}
+    c.appendChild(wrap);
+  });
+}
+
+function buildSvcPricesForm(){
+  const c=$('#fsp-tabs'); c.innerHTML='';
+  SVC_LABELS.forEach((lbl,i)=>{
+    const def=DEFAULT_PRICES_TABS[i];
+    const wrap=document.createElement('div');
+    let html=`<div style="font-weight:800;font-size:13px;color:var(--blue2);margin-bottom:6px">${lbl}</div>`;
+    def.items.forEach((item,ri)=>{
+      html+=`<div class="prow"><span>${item.name}</span><input type="number" min="0" step="1000" data-svc="${i}" data-ri="${ri}" value="${item.price}"></div>`;
+    });
+    wrap.innerHTML=html;
+    if(i<SVC_LABELS.length-1){const sep=document.createElement('hr');sep.className='sep';wrap.appendChild(sep)}
+    c.appendChild(wrap);
+  });
 }
 
 function buildRentalPriceForm(R){
@@ -849,15 +972,38 @@ function buildFromForm(){
     S=d;
   } else if(type==='rental'){
     const base=$('#fr-school').value==='1'?RENT1:RENT2;
-    // اعمال قیمت‌های ویرایش‌شده
     const inputs=[...$('#fr-prices').querySelectorAll('input[data-nm]')];
-    // deep-clone داده
     const R=JSON.parse(JSON.stringify(base));
     inputs.forEach(inp=>{
       const nm=inp.dataset.nm, val=parseFloat(inp.value)||0;
       R.g.forEach(grp=>grp.forEach(r=>{if(r[0]===nm)r[2]=val}));
     });
     S=tplRental(R);
+  } else if(type==='svc-hours'){
+    const tabs=SVC_LABELS.map((lbl,i)=>{
+      const get=(day,f)=>{
+        const inp=$('#fsh-tabs').querySelector(`input[data-svc="${i}"][data-day="${day}"][data-f="${f}"]`);
+        return inp?inp.value.trim():'';
+      };
+      const wdOpen=get('wd','open'), wdClose=get('wd','close');
+      const weOpen=get('we','open'), weClose=get('we','close');
+      return {
+        label:lbl,
+        weekdays:wdOpen?{open:wdOpen,close:wdClose}:null,
+        weekend:weOpen?{open:weOpen,close:weClose}:null,
+      };
+    });
+    S=tplServiceHours(tabs);
+  } else if(type==='svc-prices'){
+    const tabs=SVC_LABELS.map((lbl,i)=>{
+      const def=DEFAULT_PRICES_TABS[i];
+      const items=def.items.map((item,ri)=>{
+        const inp=$('#fsp-tabs').querySelector(`input[data-svc="${i}"][data-ri="${ri}"]`);
+        return {name:item.name,price:inp?parseFloat(inp.value)||0:item.price,note:item.note};
+      });
+      return {label:lbl,items};
+    });
+    S=tplServicePrices(tabs);
   }
   selId=null;viewT=Infinity;playing=false;hist=[];hi=-1;afterDocChange();commit();
   toast('قالب ساخته شد! هر لایه را با موس ویرایش کنید.');
